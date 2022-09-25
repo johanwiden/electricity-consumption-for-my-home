@@ -1,0 +1,26 @@
+#+title: 220921
+Klockslag	Timpris (SE3)
+Kl. 00 - 01	221,86 öre/kWh
+Kl. 01 - 02	208,66 öre/kWh
+Kl. 02 - 03	237,40 öre/kWh
+Kl. 03 - 04	243,44 öre/kWh
+Kl. 04 - 05	278,45 öre/kWh
+Kl. 05 - 06	368,90 öre/kWh
+Kl. 06 - 07	450,94 öre/kWh
+Kl. 07 - 08	569,67 öre/kWh
+Kl. 08 - 09	570,94 öre/kWh
+Kl. 09 - 10	462,13 öre/kWh
+Kl. 10 - 11	389,66 öre/kWh
+Kl. 11 - 12	348,00 öre/kWh
+Kl. 12 - 13	322,84 öre/kWh
+Kl. 13 - 14	327,05 öre/kWh
+Kl. 14 - 15	336,92 öre/kWh
+Kl. 15 - 16	359,10 öre/kWh
+Kl. 16 - 17	394,20 öre/kWh
+Kl. 17 - 18	440,10 öre/kWh
+Kl. 18 - 19	492,78 öre/kWh
+Kl. 19 - 20	510,91 öre/kWh
+Kl. 20 - 21	481,85 öre/kWh
+Kl. 21 - 22	435,99 öre/kWh
+Kl. 22 - 23	390,74 öre/kWh
+Kl. 23 - 00	368,97 öre/kWh
