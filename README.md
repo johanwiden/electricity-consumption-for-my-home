@@ -16,12 +16,16 @@ and sanitize that file.
 
 I then run python script "kostnad_timme.py" (in english: cost_hour) to produce a report with costs per hour.
 I run the script as follows:
+
   ./kostnad_timme.py 2022-09-18 2022-09-26
+
 This produces a per hour report for the days from 2022-09-18 inclusive, to 2022-09-26 exclusive.
 Missing data is handled.
 
 I run script "kostnad_dag.py" (in english: cost_day) to produce a report with costs per day.
 I run the script as follows:
+
   ./kostnad_dag.py 2022-09-18 2022-09-26
+
 This produces a per day report for the days from 2022-09-18 inclusive, to 2022-09-26 exclusive.
 Missing data is handled.  
