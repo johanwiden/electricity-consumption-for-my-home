@@ -29,3 +29,6 @@ I run the script as follows:
 
 This produces a per day report for the days from 2022-09-18 inclusive, to 2022-09-26 exclusive.
 Missing data is handled.  
+
+## Web scraping
+See [web-scraping.org](doc/web-scraping.org) for documentation on how to scrape a web-page, and to do this automatically every day.

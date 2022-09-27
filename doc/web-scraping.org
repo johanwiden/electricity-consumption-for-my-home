@@ -1,0 +1,197 @@
+#+title: Web Scraping
+
+I use crontab, anacron, at, python scrapy, to fetch electricity pricing. The prices are fetched one time per day.
+I prefere that the prices are fetched at about 11 am, or later. To achieve this is a little trickier than it might seem, as
+my computer is not running 24/7. It runs every day, but not the whole day, and at different times each day.
+
+* Web scraping
+The electricity prices are fetched from a web page, actually from a table in the web page. I use the python package scrapy to achieve this.
+So start by installing scrapy. In my case I installed the scrapy package provided by Ubuntu, as I felt there was no need to use a virtual python environment for such a simple task:
+- sudo apt install python3-scrapy
+
+Then I created a directory for all the scrapy related scripts:
+- mkdir ~/projects/web-scraping
+- cd ~/projects/web-scraping
+- scrapy startproject elpriser
+- cd elpriser
+- scrapy genspider dagpris elbruk.se
+
+The first scrapy command creates a scrapy project skeleton, in the directory "elpriser".
+
+The second scrapy command creates a skeleton app in this project, for accessing the website "elbruk.se".
+It creates a skeleton python script:
+- ~/projects/web-scraping/elpriser/elpriser/spiders/dagpris.py
+
+Replace that script with the following:
+
+#+name: dagpris.py
+#+begin_src python
+# Tutorial and documentation: https://docs.scrapy.org/en/latest/intro/tutorial.html
+
+import scrapy
+import logging
+import datetime
+
+class DagprisSpider(scrapy.Spider):
+    name = "dagpris"
+    allowed_domains = ["elbruk.se"]
+    start_urls = ["https://elbruk.se/timpriser-se3-stockholm#aktuella"]
+
+    def parse(self, response):
+        page = response.url.split("/")[-2]
+        table = response.xpath("//table")[1]
+        tbody = table.xpath("tbody")
+        rows = tbody.xpath("tr")
+        today = datetime.date.today()
+        numrows = len(rows)
+        filename = f"dagpriser-{page}-{today}.json"
+        # Generate a valid JSON array. Can be validated with JSONLint (https://jsonlint.com/).
+        with open(filename, "w") as f:
+            f.write("[\n")
+            for row in rows:
+                line = '{{"time": "{}", "price": "{}"}}'.format(
+                    row.xpath("td[1]/text()").extract_first(),
+                    row.xpath("td[2]/text()").extract_first(),
+                )
+                f.write(line)
+                if numrows > 1:
+                    f.write(",\n")
+                else:
+                    f.write("\n")
+                numrows -= 1
+            f.write("]\n")
+        self.logger.info(f"Saved file {filename}")
+#+end_src
+
+This script accesses the web page specified by "start_urls", and extracts a html table from that page.
+It writes the table in JSON format to a file with a name like "dagpriser-www.elbruk.se-2022-09-27.json".
+
+To determine the xpath() expressions needed, I used the scrapy command:
+- scrapy shell "https://elbruk.se/timpriser-se3-stockholm#aktuella"
+
+I then created a shell script to run the spider:
+- ~/projects/web-scraping/elpriser/crawl-dagpris.sh
+
+#+name: crawl-dagpris.sh
+#+begin_src sh
+#!/bin/sh
+
+cd ~/projects/web-scraping/elpriser
+scrapy crawl dagpris
+#+end_src
+
+A successful execution of this script creates an output JSON file in directory ~/projects/web-scraping/elpriser.
+It also logs copiously to stdout/stderr. So when I was satisfied with my python script I turned off the logging:
+
+#+name: crawl-dagpris.sh
+#+begin_src sh
+#!/bin/sh
+
+cd ~/projects/web-scraping/elpriser
+scrapy crawl dagpris --nolog
+#+end_src
+
+I validated the format of the created JSON file:
+- jsonlint-php *.json
+
+jsonlint-php can be installed with:
+- sudo apt install jsonlint
+
+* crontab, anacron, at
+I run the script crawl-dagpris.sh via crontab, anacron, at.
+
+** anacron
+anacron is used because it can guarantee that the script is executed at most once per day. It also guarantees that when anacron is run, then it will execute the script, if it has not already been executed that day.
+
+Create working directories for anacron:
+- mkdir -p ~/.anacron/{etc,spool,daily}
+
+Create ~/.anacron/etc/anacrontab:
+
+#+name: ~/.anacron/etc/anacrontab
+#+begin_src sh
+# /etc/anacrontab: configuration file for anacron
+
+# See anacron(8) and anacrontab(5) for details.
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# period  delay  job-identifier  command
+1         10     dailyjob        run-parts ${HOME}/.anacron/daily/
+#+end_src
+
+period 1 says that dailyjob should be executed once per day.
+
+run-parts is a standard linux command, and is used by the system to execute scripts in /etc/cron.daily and so on.
+Note that run-parts is opinionated about what the name syntax for the scripts/executables in the daily directory. In particular it ignores files with names containing '.', such as "test.sh". See the manual for run-parts.
+
+Execution of anacron is logged to /var/log/syslog. The log entries are marked "anacron".
+
+When anacron has finished running a job, it puts a timestamp for that job under:
+- ~/.anacron/spool/
+
+For example "~/.anacron/spool/dailyjob".
+
+** crontab
+anacron does not run continuously, it just checks if there is work to do, does the work, and then exits.
+
+I therefore use crontab to execute anacron once every hour.
+
+Add an entry to crontab, or change entries in crontab, by using the command:
+- crontab -e
+
+Here is how my crontab looks (output from command "crontab -l"):
+
+#+name: crontab
+#+begin_src sh
+# Edit this file to introduce tasks to be run by cron.
+#
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+#
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+#
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+#
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+#
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+#
+# For more information see the manual pages of crontab(5) and cron(8)
+#
+# m h  dom mon dow   command
+@hourly /usr/sbin/anacron -s -t $HOME/.anacron/etc/anacrontab -S $HOME/.anacron/spool
+#+end_src
+
+** at
+To ensure that the web scraper is not executed to early in the day, I schedule the web scraping job via the "at" command.
+
+If "at" is not already installed, it can be installed with:
+- sudo apt install at
+
+I put the following shell script in the file ~/.anacron/daily/crawl:
+
+#+name: ~/.anacron/daily/crawl
+#+begin_src sh
+#!/bin/sh
+
+at -M -f "${HOME}/bin/crawl-dagpris.sh" 11:15
+#+end_src
+
+${HOME}/bin/crawl-dagpris.sh is as follows:
+
+#+name: ${HOME}/bin/crawl-dagpris.sh
+#+begin_src sh
+#!/bin/sh
+
+cd ~/projects/web-scraping/elpriser
+scrapy crawl dagpris --nolog
+#+end_src
