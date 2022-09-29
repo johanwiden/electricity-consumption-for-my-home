@@ -186,8 +186,9 @@ I put the following shell script in the file ~/.anacron/daily/crawl:
 
 preferred_time="11:15"
 scheduled_time="${preferred_time}"
-currenttime=$(date +%H:%M)
-if [[[[ "${currenttime}" > "${preferred_time}" ]]]]; then
+preferred_time_as_number="${preferred_time/:/}"
+current_time_as_number=$(date +%H%M)
+if [ "${current_time_as_number}" -ge "${preferred_time_as_number}" ]; then
     scheduled_time="NOW"
 fi
 at -M -f "${HOME}/bin/crawl-dagpris.sh" "${scheduled_time}"
