@@ -7,5 +7,5 @@
 #   $0 el-pris-fil...
 dumpfile=el-pris_dump.csv
 
-egrep '^Kl. ' $* >"${dumpfile}"
+fgrep --with-filename 'Kl. ' $* >"${dumpfile}"
 sed -i -f collect_el_pris.sed "${dumpfile}"
