@@ -187,8 +187,14 @@ I put the following shell script in the file ~/.anacron/daily/crawl:
 preferred_time="11:15"
 scheduled_time="${preferred_time}"
 preferred_time_as_number="${preferred_time/:/}"
+preferred_minute="${preferred_time_as_number:2}"
 current_time_as_number=$(date +%H%M)
+time_diff=$(("${preferred_time_as_number}" - "${current_time_as_number}"))
 if [ "${current_time_as_number}" -ge "${preferred_time_as_number}" ]; then
+    scheduled_time="NOW"
+elif [ "${time_diff}" -eq 1 ]; then
+    scheduled_time="NOW"
+elif [ "${time_diff}" -eq 41 ] && [ "${preferred_minute}" -eq 0 ]; then
     scheduled_time="NOW"
 fi
 at -M -f "${HOME}/bin/crawl-dagpris.sh" "${scheduled_time}"
