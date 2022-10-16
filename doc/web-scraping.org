@@ -71,25 +71,43 @@ To determine the xpath() expressions needed, I used the scrapy command:
 - scrapy shell "https://elbruk.se/timpriser-se3-stockholm#aktuella"
 
 I then created a shell script to run the spider:
-- ~/projects/web-scraping/elpriser/crawl-dagpris.sh
+- ~/projects/web-scraping/elpriser/crawl-dagpris1.sh
 
-#+name: crawl-dagpris.sh
-#+begin_src sh
-#!/bin/sh
+#+name: crawl-dagpris1.sh
+#+begin_src bash
+#!/bin/bash
 
-cd ~/projects/web-scraping/elpriser
-scrapy crawl dagpris
+jsonfile=dagpriser-www.elbruk.se-$(date "+%Y-%m-%d").json
+echo "start" "$(date)"
+cd ~/projects/web-scraping/elpriser || exit 1
+for (( ; ; )); do
+    echo "before scrape" "$(date)"
+    scrapy crawl dagpris --nolog
+    echo "testing for" "${jsonfile}" "$(date)"
+    if test -f "${jsonfile}"; then
+        echo "file created" "$(date)"
+        break
+    else
+        echo "before sleep" "$(date)"
+        sleep 60
+    fi
+done
+
+echo "end of crawl-dagpris1" "$(date)"
 #+end_src
 
 A successful execution of this script creates an output JSON file in directory ~/projects/web-scraping/elpriser.
-It also logs copiously to stdout/stderr. So when I was satisfied with my python script I turned off the logging:
+
+Initially I had a simpler script, using /bin/sh syntax. This worked well with the "at" command (see below). But then I had to deal
+with that the site might not be available when the script started running, for example because the computer and network switch had just
+come out of sleep. So the script became a bash script, and this does not seem to work well with the at command: It seems as if the at command runs the script with /bin/sh. I solved this by creating a simpler script "crawl-dagpris.sh", that in turn calls "crawl-dagpris1.sh". This simpler script also takes care of redirecting stdout and stderr to a log file.
+
+Here is the  "crawl-dagpris1.sh":
 
 #+name: crawl-dagpris.sh
-#+begin_src sh
-#!/bin/sh
-
-cd ~/projects/web-scraping/elpriser
-scrapy crawl dagpris --nolog
+#+begin_src bash
+#!/bin/bash
+~/bin/crawl-dagpris1.sh >>~/junk/crawl-log.txt 2>&1
 #+end_src
 
 I validated the format of the created JSON file:
@@ -200,12 +218,4 @@ fi
 at -M -f "${HOME}/bin/crawl-dagpris.sh" "${scheduled_time}"
 #+end_src
 
-${HOME}/bin/crawl-dagpris.sh is as follows:
-
-#+name: ${HOME}/bin/crawl-dagpris.sh
-#+begin_src sh
-#!/bin/sh
-
-cd ~/projects/web-scraping/elpriser
-scrapy crawl dagpris --nolog
-#+end_src
+${HOME}/bin/crawl-dagpris.sh is described and shown above.
